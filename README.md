@@ -7,7 +7,7 @@ There are already numerous guides for performing basic stack-based buffer overfl
 
 This guide hopes to empower you with the knowledge needed to perform these buffer overflows quickly using the commnand line, regardless of whether you're in Linux or Windows!
 
-  I'm making one assumption, which is that you're already familiar with [cracking the brainpan.exe binary with Immunity Debugger](https://assume-breach.medium.com/oscp-prep-buffer-overflows-made-super-easy-with-the-brainpan-1-vm-e5ccaf7d3f0c). Learning this process caused me much feet-dragging, as I know it does for many security students. (I know, I know, just repeat it til you get it and it's easy.) Well, I found another way, using [radare2](https://github.com/radareorg/radare2)! I didn't find this process documented anywhere else, so here is how I eventually did it, streamlined into some hopefully easy steps:
+  This guide compliments Brainpan/Immunity Debugger walkthroughs [like this one](https://assume-breach.medium.com/oscp-prep-buffer-overflows-made-super-easy-with-the-brainpan-1-vm-e5ccaf7d3f0c). Learning this process caused me much feet-dragging, as I know it does for many security students. (I know, I know, just repeat it til you get it and it's easy.) Well, I found another way, using [radare2](https://github.com/radareorg/radare2)! I didn't find this process documented anywhere else, so here is how I eventually did it, streamlined into some hopefully easy steps:
 
 ## The setup
 #### 1) VMs
