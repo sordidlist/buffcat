@@ -166,3 +166,28 @@ EIP is filled with the only 4 Bs (0x42 in ASCII) in our input string, proving th
 ### 7) Identify a usable JMP ESP instruction
 Great! Now we need to find a JMP ESP instruction in our binary, somewhere that we can exploit, so that we can redirect the execution flow of our program.
 
+Restart brainpan and reattach radare2, then run `is` to list all the symbols.
+
+![is](https://user-images.githubusercontent.com/5056836/121800858-64956000-cbf1-11eb-990a-02a19aa35400.PNG)
+
+For small, simple binaries like this, we'll commonly find references to functions here that cannot be reached by our normal execution path, but which sometimes contain a JMP ESP instruction that we can exploit. In this case, the `_winkwink` function catches our eye. Let's see what it does by looking up the "vaddr" virtual address value for our `_winkwink` function: `0x311712f0`, and then using radare2's "seek" command: `> s 0x311712f0`.
+
+![s](https://user-images.githubusercontent.com/5056836/121801001-2f3d4200-cbf2-11eb-83b1-aedb2219bf41.PNG)
+
+We'll see that our current position in memory has changed. But with only that piece of information, we can't do much.
+
+Type `Shift + V`, then press `Enter` to enter visual mode:
+
+![v](https://user-images.githubusercontent.com/5056836/121801108-d6ba7480-cbf2-11eb-9d28-5bd8367965f3.PNG)
+
+If your screen changes when you press `Enter` but it doesn't look like this screenshot, don't worry. There are multiple perspectives in visual mode. Press the `p` key to cycle forward through perspectives, and press `Shift + p` to cycle backwards. Cycle through visual perspectives until you reach the debug view, which shows the CPU registers at the top:
+
+![vd](https://user-images.githubusercontent.com/5056836/121801250-a6270a80-cbf3-11eb-888b-890003769b5b.PNG)
+
+In the screenshot above, I've pointed out the columns of one instruction in particular. The right column shows the assembly instruction, `jmp esp`. This is the assembly instruction we've been searching for an exploitable intance of. The middle column shows the hexidecimal translation of that assembly instruction, `ffe4`. And the left column is, of course, the memory address where the instruction resides, `0x311712f3`.
+
+(At some point, I hope to come back to this section with a little more detail regarding how to choose this JMP ESP. This is the step mona.py usually handles.)
+
+Since our binary is 32-bit, it will use little-endian notation. So, we'll write each hex character in our new JMP ESP address in reverse, so that the instruction gets interpreted properly: `\xf3\x12\x17\x31`. We'll need this address shortly.
+
+### 8) Bad Characters
