@@ -63,7 +63,7 @@ Over in the Linux VM, clone [this repo full of pre-made brainpan scripts](https:
 
 Navigate into the repo and run `python2 brainfuzzer.py <YOUR_WINDOWS_VM_IP> 9999`
 
-Hopefully you'll see something like this in your Linux VM:
+You should see something like this in your Linux VM:
 
 ```
 python2 brainfuzzer.py <YOUR_WINDOWS_VM_IP> 9999
@@ -81,7 +81,7 @@ python2 brainfuzzer.py <YOUR_WINDOWS_VM_IP> 9999
 [+] Connection failed. Make sure IP/port are correct, or check debugger for brainpan.exe crash.
 ```
 
-and you'll see something like this in your Windows VM:
+and something like this in your Windows VM:
 
 ```
 brainpan.exe
@@ -117,4 +117,52 @@ brainpan.exe
 ```
 
 The fuzzer will probably run a little past what the server actually responds to, this is fine. We see on the Windows box that brainpan crashed after 602 bytes.
+
+This is how we know roughly how long our offset will be, but it's only a very rough number. To find the exact offset, we need to go to the next step. We'll send another long string with no repeating patterns.
+
+First, notice that the memory address of our crashed program is `0x41414141`. 0x41 is the hexadecimal translation of the ASCII character 'A', which tells us that our EIP register was filled with As when the program crashed.
+
+Restart brainpan and reattach radare2, making sure to run `4dc` to skip past all the thread startup steps. 
+
+You may notice by now that the process of restarting the radare2 debugger isn't as time-consuming as with point-click debuggers!
+
+In your Linux VM, execute:
+
+` $ python2 brainpan1.py <YOUR_WINDOWS_VM_IP> 9999`
+
+In your Windows VM, observe:
+
+![bp1-2](https://user-images.githubusercontent.com/5056836/121798525-23e31a00-cbe4-11eb-93d3-78c1ad1e277c.PNG)
+Brainpan receives the pattern from the attack server and crashes
+
+![bp1](https://user-images.githubusercontent.com/5056836/121798522-1d54a280-cbe4-11eb-934a-29db40437c77.PNG)
+
+The attached radare2 process shows that when the application crashed, we were at memory address `0x35724134`
+
+You may notice that this is the same address we landed on in the Immunity tutorial I mentioned earlier when we reached this step! So we're still on track.
+
+In our Linux VM, with `metasploit-framework` installed, we can check:
+
+```
+metasploit-framework/tools/exploit/pattern_offset.rb -q 35724134
+
+[*] Exact match at offset 524
+```
+
+This tells us that our offset should be exactly 524 bytes off from our starting point. `brainpan2.py` performs a proof of concept, to make sure we can control EIP. First restart brainpan and radare2, then go to your Linux VM:
+
+` $ python2 brainpan2.py <YOUR_WINDOWS_VM_IP> 9999`
+
+In your Windows VM, observe:
+
+![bp2-2](https://user-images.githubusercontent.com/5056836/121798886-0e6eef80-cbe6-11eb-8af0-69c8d58b41c6.PNG)
+
+We send a long string with a bunch of As, followed by 4 Bs, followed by a bunch of Cs.
+
+![bp2](https://user-images.githubusercontent.com/5056836/121798843-e4b5c880-cbe5-11eb-97a3-f0e4c60c2644.PNG)
+
+EIP is filled with the only 4 Bs (0x42 in ASCII) in our input string, proving that we control precisely the 4 bytes that will control EIP.
+
+### 7) Identify a usable JMP ESP instruction
+Great! Now we need to find a JMP ESP instruction in our binary, somewhere that we can exploit, so that we can redirect the execution flow of our program.
 
