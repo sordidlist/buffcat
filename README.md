@@ -3,11 +3,22 @@ A hopefully helpful handbook for performing buffer overflows from the command li
 
 🐅
 
+#### TL;DR - Attach radare2 to a running process (in Linux or Windows) in debug mode with analysis enabled using `radare2(.exe) -dA <PID>`.
+
+####         Use `dc` to unpause the debugger. Use `db` to set breakpoints. Use `s` to seek to a location in memory.
+
+####         The radare2 prompts you with your current memory location at all times. This means you can easily see what EIP was holding when the program crashes. Using `V` will enter visual mode, while `p` will cycle perspectives.
+
+####         The `is` command lists all the symbols in the binary. You'll need to have run analysis on the binary already.
+
+____________________________________________________________________________________________
+
+## On with it
 There are already numerous guides for performing basic stack-based buffer overflows with popular crackme binaries, using debuggers like Immunity or ollydbg.
 
 This guide hopes to empower you with the knowledge needed to perform these buffer overflows quickly using the commnand line, regardless of whether you're in Linux or Windows!
 
-  This guide compliments Brainpan/Immunity Debugger walkthroughs [like this one](https://assume-breach.medium.com/oscp-prep-buffer-overflows-made-super-easy-with-the-brainpan-1-vm-e5ccaf7d3f0c). Learning this process caused me much feet-dragging, as I know it does for many security students. (I know, I know, just repeat it til you get it and it's easy.) Well, I found another way, using [radare2](https://github.com/radareorg/radare2)! I didn't find this process documented anywhere else, so here is how I eventually did it, streamlined into some hopefully easy steps:
+  This guide compliments Brainpan/Immunity Debugger walkthroughs [like this one](https://assume-breach.medium.com/oscp-prep-buffer-overflows-made-super-easy-with-the-brainpan-1-vm-e5ccaf7d3f0c). Learning this process caused me much feet-dragging, as I know it does for many security students. (I know, I know, just repeat it til you get it and it's easy.) Well, I found another way, using [radare2](https://github.com/radareorg/radare2)! I didn't find this process (radare2 for Windows with brainpan specifically) documented very thoroughly anywhere else, so here is how I eventually did it:
 
 ## The setup
 #### 1) VMs
@@ -15,7 +26,7 @@ You'll need a Windows VM and a Linux VM running together, and able to ping each 
 #### 2) Brainpan 
 On the Windows VM, download and launch brainpan.exe Copies of this are all over the web, just make sure you get it from somewhere reputable and don't run it outside of a VM.
 #### 3) Radare2
-Also on the Windows VM, download radare2 for Windows. This part is minorly tricky because, to debug 32-bit binaries, you have to get the 32-bit version of the debugger, which you have to find on radare2's github actions page, or you can just use [the version I used in this example](https://github.com/radareorg/radare2/files/6617618/radare2-install.zip). If, once we open radare2 in the next step, you notice that your registers start with 'e' instead of 'r' ('eip' instead of 'rip'), you'll know that you got the right version to debug brainpan.
+Also on the Windows VM, download radare2 for Windows. This part is minorly tricky because, to debug 32-bit binaries, you have to get the 32-bit version of the debugger, which you have to find on radare2's github actions page, or you can just use [the version I used in this example](https://github.com/radareorg/radare2/files/6617618/radare2-install.zip). If, once we open radare2, you notice that your registers start with 'e' instead of 'r' ('eip' instead of 'rip'), you'll know that you got the right version to debug brainpan. To check, run `radare2.exe`, then type `Vpp` and hit `Enter`. If you don't see register values at the top of the screen, keep pressing `p` until you're on that screen. To leave this view, press `q`. To quit radare2, type `q` again and hit `Enter`.
 
 32-bit radare2 (the one you want for 32 bit binaries, and for this example):
 
@@ -35,16 +46,16 @@ Keep the Task Manager available. Anytime we close and re-open brainpan during de
 #### 4.5) File protections
 If you're interested in checking a binary for file protections but don't want to leave the command line, try the `checksec <binary>` command in Linux, or [winchecksec](https://github.com/trailofbits/winchecksec) for Windows.
 
-### The good part
+## The good part
 
 #### 5) Debugging
 In your Windows VM, open up a second cmd terminal aside from the one brainpan is running in. In your `\radare2-install\bin\` directory, run `radare2.exe -dA <YOUR_BRAINPAN_PID_HERE>`, using your brainpan.exe PID as the last arg. `-d` is for debug mode, and `-A` is to auto analyze the binary.
 
 ![rad1](https://user-images.githubusercontent.com/5056836/121239756-e33b7780-c856-11eb-932d-f76177bdfc54.PNG)
 
-You'll get some analysis output, followed by a command prompt, which is the bottom line in yellow. The hex address shown is the current address in memory. From this prompt, run `4dc` to un-pause the debugger 4 times (radare2 appears to pause brainpan's execution whenever a new thread is launched, and this command un-pauses it so that we can debug in real time). 
+You'll get some analysis output, followed by a command prompt, which is the bottom line in yellow. The hex address shown is the current address in memory. From this prompt, run `2dc` to un-pause the debugger 2 times (radare2 appears to pause brainpan's execution whenever a new thread is launched, and this command un-pauses it so that we can debug in real time). 
 
-It will say "Finished thread", at which point you can hit enter again and get back to the yellow radare2 prompt.
+It will say "Finished thread", at which point you can hit enter again and get back to the yellow radare2 prompt. I noticed that sometimes I had to do `dc` more than twice, sometimes up to 4 times. Just do `dc` until you see "Finished thread" on the console. Then, brainpan should be listening. Note: further down, you may have to `dc` radare2 again once you've sent some input over the wire, so that brainpan can unpause and receive it.
 
 ```
 [0x772e29dc]> 4dc
@@ -125,9 +136,9 @@ This is how we know roughly how long our offset will be, but it's only a very ro
 
 First, notice that the memory address of our crashed program is `0x41414141`. 0x41 is the hexadecimal translation of the ASCII character 'A', which tells us that our EIP register was filled with As when the program crashed.
 
-Restart brainpan and reattach radare2, making sure to run `4dc` to skip past all the thread startup steps. 
+![err](https://user-images.githubusercontent.com/5056836/121804181-56037480-cc02-11eb-85db-32a1c95997b9.PNG)
 
-You may notice by now that the process of restarting the radare2 debugger isn't as time-consuming as with point-click debuggers!
+Restart brainpan and reattach radare2, making sure to run `dc` enough times to skip past all the thread startup steps. 
 
 In your Linux VM, execute:
 
