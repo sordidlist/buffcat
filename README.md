@@ -26,9 +26,9 @@ This guide hopes to empower you with the knowledge needed to perform these buffe
 #### 1) VMs
 You'll need a Windows VM and a Linux VM running together, and able to ping each other.
 #### 2) Brainpan 
-On the Windows VM, download and launch brainpan.exe Copies of this are all over the web, just make sure you get it from somewhere reputable and don't run it outside of a VM.
+On the Windows VM, download and launch brainpan.exe Copies of this are all over the web, but I used [the one in this git repo](https://github.com/freddiebarrsmith/Buffer-Overflow-Exploit-Development-Practice/tree/master/brainpan).
 #### 3) Radare2
-Also on the Windows VM, download radare2 for Windows. This part is minorly tricky because, to debug 32-bit binaries, you have to get the 32-bit version of the debugger, which you have to find on radare2's github actions page, or you can just use [the version I used in this example](https://github.com/radareorg/radare2/files/6617618/radare2-install.zip). If, once we open radare2, you notice that your registers start with 'e' instead of 'r' ('eip' instead of 'rip'), you'll know that you got the right version to debug brainpan. To check, run `radare2.exe`, then type `Vpp` and hit `Enter`. If you don't see register values at the top of the screen, keep pressing `p` until you're on that screen. To leave this view, press `q`. To quit radare2, type `q` again and hit `Enter`.
+Also on the Windows VM, download radare2 for Windows. This part is minorly tricky because, to debug 32-bit binaries, you have to get the 32-bit version of the debugger, which you have to find on radare2's github actions page, or you can just use [the version I used in this example](https://github.com/radareorg/radare2/files/6617618/radare2-install.zip). If, once we open radare2, you notice that your registers start with 'e' instead of 'r' ('eip' instead of 'rip'), you'll know that you got the right version to debug brainpan. To check, run `radare2.exe -dA brainpan.exe`, then type `Vpp` and hit `Enter`. If you don't see register values at the top of the screen, keep pressing `p` until you're on that screen. To leave this view, press `q`. To quit radare2, type `q` again and hit `Enter`.
 
 32-bit radare2 (the one you want for 32 bit binaries, and for this example):
 
