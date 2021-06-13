@@ -3,7 +3,9 @@ A hopefully helpful handbook for performing buffer overflows from the command li
 
 🐅
 
-#### TL;DR - Attach radare2 to a running process (in Linux or Windows) in debug mode with analysis enabled using `radare2(.exe) -dA <PID>`.
+#### TL;DR - Attach radare2 to a running process (in Linux or Windows) in debug mode with analysis enabled using 
+
+#### `radare2(.exe) -dA <PID>`.
 
 ####         Use `dc` to unpause the debugger. Use `db` to set breakpoints. Use `s` to seek to a location in memory.
 
